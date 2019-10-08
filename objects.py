@@ -53,7 +53,7 @@ class Ball(turtle.Turtle):
         self.goto(0, 0)
         self.dx = speed
         self.dy = speed
-        self.speed_limit = 1
+        self.speed_limit = 2
         self.__speed_multiplier = 1.5
         self.currentspeed = 2
 
@@ -182,7 +182,7 @@ class Window(object):
 
     def __check_points(self):
         if 10 in self.__objects[3].info_to_show[:2]:
-            print(f"Player {self.__objects[3].info_to_show[:2].index(10)+1} Wins!")
+            print(f"Player {'AB'[self.__objects[3].info_to_show[:2].index(10)]} Wins!")
             self.__objects[3].info_to_show[0] = 0
             self.__objects[3].info_to_show[1] = 0
             return "y" not in input("Do you want to play again?[y/n]")
