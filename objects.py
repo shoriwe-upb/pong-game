@@ -53,7 +53,15 @@ class Ball(turtle.Turtle):
         self.goto(0, 0)
         self.dx = speed
         self.dy = speed
+        self.speed_limit = 1
+        self.__speed_multiplier = 1.5
         self.currentspeed = 2
+
+    def speed_up(self):
+        if abs(self.dx) < self.speed_limit:
+            self.dx *= self.__speed_multiplier
+        if abs(self.dy) < self.speed_limit:
+            self.dy *= self.__speed_multiplier
 
 
 class Window(object):
@@ -64,17 +72,14 @@ class Window(object):
         self.__screen.tracer(0)
 
         self.__last_windowsize = (self.__screen.window_width(), self.__screen.window_height())
-        self.speed = 0.1
+        self.speed = 0.2
         self.__objects = (Pad(-350), Pad(340), Ball(1, self.speed), PointsView(240, self.speed))
 
-        self.speed_limit = 1
-        self.__speed_multiplier = 1.5
-
     # Function to update the points
-    def __update_points(self, A, B):
-        if A and not B:
+    def __update_points(self, a, b):
+        if a and not b:
             self.__objects[3].info_to_show[0] += 1
-        elif B and not A:
+        elif b and not a:
             self.__objects[3].info_to_show[1] += 1
 
     # Setup he buttons for the pads
@@ -88,6 +93,7 @@ class Window(object):
         for index, object_ in enumerate(self.__objects[:2]):
             self.__setup_key(object_.up, ref[index][0])
             self.__setup_key(object_.down, ref[index][1])
+        self.__setup_key(self.__speed_up_ball, "space")
         self.__screen.listen()
 
     # When the user change the window size adapt everything to the new one
@@ -102,8 +108,6 @@ class Window(object):
 
                 new_x = object_.xcor() * windowsize[0] / self.__last_windowsize[0]
                 new_y = object_.ycor() * windowsize[1] / self.__last_windowsize[1]
-                if object_ == self.__objects[-1]:
-                    print(new_x, new_y)
 
                 new_speed = (new_heigth * object_.currentspeed) / heigth
 
@@ -122,6 +126,11 @@ class Window(object):
 
             self.__last_windowsize = windowsize
 
+    def __speed_up_ball(self):
+        # Speed up the ball everytime it collapse with a pad
+        self.__objects[2].speed_up()
+        self.__objects[3].info_to_show[2] = abs(self.__objects[2].dx)
+
     def update_ball(self):
         new_x = self.__objects[2].xcor() + self.__objects[2].dx
         new_y = self.__objects[2].ycor() + self.__objects[2].dy
@@ -130,20 +139,15 @@ class Window(object):
             and (self.__objects[1].ycor() - self.__objects[1].shapesize()[0] * 90 / 6 < new_y < self.__objects[
                     1].ycor() + self.__objects[1].shapesize()[0] * 90 / 6)) or (
                 new_x < self.__objects[0].xcor() + (self.__objects[0].shapesize()[1] * 30 / 2)
-                and (self.__objects[0].ycor() - self.__objects[0].shapesize()[0] * 90 / 6 < new_y < self.__objects[
-            0].ycor() + self.__objects[0].shapesize()[0] * 90 / 6)):
+                and (self.__objects[0].ycor() - self.__objects[0].shapesize()[0] * 90 / 6 < new_y <
+                     self.__objects[0].ycor() + self.__objects[0].shapesize()[0] * 90 / 6)):
             # Change the direction
             self.__objects[2].dx *= -1
-            # Speed up the ball everytime it collapse with a pad
-            if abs(self.__objects[2].dx) < self.speed_limit:
-                self.__objects[2].dx *= self.__speed_multiplier
-            if abs(self.__objects[2].dy) < self.speed_limit:
-                print('dfgdfg')
-                self.__objects[2].dy *= self.__speed_multiplier
-            self.__objects[3].info_to_show[2] = abs(self.__objects[2].dx)
+            # Update the speed
+            self.__speed_up_ball()
         # The ball colapse with the left end of the window
         elif -self.__last_windowsize[0] / 2 > new_x:
-            # Give the points to repective players
+            # Give the points to respective players
             self.__objects[3].info_to_show[1] += 1
             # Restore the speed of the ball
             self.__objects[2].dy = self.speed
@@ -176,9 +180,19 @@ class Window(object):
         self.__objects[2].sety(new_y)
         self.__objects[3].update()
 
+    def __check_points(self):
+        if 10 in self.__objects[3].info_to_show[:2]:
+            print(f"Player {self.__objects[3].info_to_show[:2].index(10)+1} Wins!")
+            self.__objects[3].info_to_show[0] = 0
+            self.__objects[3].info_to_show[1] = 0
+            return "y" not in input("Do you want to play again?[y/n]")
+
     def run(self):
         self.setup_pads()
         while True:
+            if self.__check_points():
+                self.__screen.bye()
+                exit(-1)
             # sleep(0.01)
             self.update_sizes()
             self.__screen.update()
